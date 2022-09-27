@@ -224,7 +224,16 @@ def process_mbox_files(username, service, labels):
       for index, message in enumerate(mbox):
         if index < args.from_message:
           continue
-        logging.info("Processing message %d '%s' in label '%s'", index, message['Message-ID'], labelname)
+        if message['Message-ID'] is None:
+          logging.error("Processing message %d does not have 'Message-ID' header", index)
+          continue
+        if message['Date'] is None:
+          logging.error("Processing message %d does not have 'Date' header", index)
+          continue
+        if message['From'] is None:
+          logging.error("Processing message %d does not have 'From' header", index)
+          continue
+        logging.info("Processing message %d '%s' '%s' in label '%s'", index, message['Message-ID'], message['Date'], labelname)
         try:
           if (args.replace_quoted_printable and
               'Content-Type' in message and
