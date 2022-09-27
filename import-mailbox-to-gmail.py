@@ -224,7 +224,7 @@ def process_mbox_files(username, service, labels):
       for index, message in enumerate(mbox):
         if index < args.from_message:
           continue
-        logging.info("Processing message %d in label '%s'", index, labelname)
+        logging.info("Processing message %d '%s' in label '%s'", index, message['Message-ID'], labelname)
         try:
           if (args.replace_quoted_printable and
               'Content-Type' in message and
