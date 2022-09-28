@@ -265,7 +265,6 @@ def process_mbox_files(username, service, labels):
           logging.exception(
               'Failed to replace text/quoted-printable with text/plain '
               'in Content-Type header')
-          save_message_to_file(message, full_filename + '.err')
         try:
           if args.fix_msgid and 'Message-ID' in message:
             msgid = message['Message-ID']
@@ -278,7 +277,6 @@ def process_mbox_files(username, service, labels):
             message.replace_header('Message-ID', msgid)
         except Exception:
           logging.exception('Failed to fix brackets in Message-ID header')
-          save_message_to_file(message, full_filename + '.err')
         metadata_object = {'labelIds': [label_id]}
         try:
           # Use media upload to allow messages more than 5mb.
