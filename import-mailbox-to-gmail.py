@@ -114,8 +114,8 @@ parser.add_argument(
       'Message number to resume from, affects ALL users and ALL '
       'mbox files (default: 0)')
 parser.add_argument(
-    '--ignore_lackof_messageid',
-    dest='skip_lackof_messageid',
+    '--ignore_lack_of_messageid',
+    dest='skip_lack_of_messageid',
     required=False,
     action='store_false',
     help=
@@ -129,7 +129,7 @@ parser.add_argument(
     "Save messages skipped or cause error"
     "(default: save these messages)")
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
-                    logging_level='INFO', skip_lackof_messageid=True,
+                    logging_level='INFO', skip_lack_of_messageid=True,
                     save_abnormal_messages=True)
 args = parser.parse_args()
 
@@ -243,7 +243,7 @@ def process_mbox_files(username, service, labels):
       for index, message in enumerate(mbox):
         if index < args.from_message:
           continue
-        if args.skip_lackof_messageid and message['Message-ID'] is None:
+        if args.skip_lack_of_messageid and message['Message-ID'] is None:
           number_of_skipped_in_label += 1
           logging.error("Skipping message %d does not have 'Message-ID' header", index)
           save_message_to_file(message, full_filename + '.skip')
