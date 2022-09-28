@@ -113,8 +113,15 @@ parser.add_argument(
     help=
       'Message number to resume from, affects ALL users and ALL '
       'mbox files (default: 0)')
+parser.add_argument(
+    '--ignore_lackof_messageid',
+    dest='skip_lackof_messageid',
+    required=False,
+    action='store_false',
+    help=
+    "Ignore lack of Message-ID header (default: do not ignore, skip the message)")
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
-                    logging_level='INFO')
+                    logging_level='INFO', skip_lackof_messageid=True)
 args = parser.parse_args()
 
 
@@ -224,7 +231,7 @@ def process_mbox_files(username, service, labels):
       for index, message in enumerate(mbox):
         if index < args.from_message:
           continue
-        if message['Message-ID'] is None:
+        if args.skip_lackof_messageid and message['Message-ID'] is None:
           logging.error("Processing message %d does not have 'Message-ID' header", index)
           continue
         if message['Date'] is None:
