@@ -120,8 +120,17 @@ parser.add_argument(
     action='store_false',
     help=
     "Ignore lack of Message-ID header (default: do not ignore, skip the message)")
+parser.add_argument(
+    '--no-save_abnormal_messages',
+    dest='save_abnormal_messages',
+    required=False,
+    action='store_false',
+    help=
+    "Save messages skipped or cause error"
+    "(default: save these messages)")
 parser.set_defaults(fix_msgid=True, replace_quoted_printable=True,
-                    logging_level='INFO', skip_lackof_messageid=True)
+                    logging_level='INFO', skip_lackof_messageid=True,
+                    save_abnormal_messages=True)
 args = parser.parse_args()
 
 
@@ -233,12 +242,15 @@ def process_mbox_files(username, service, labels):
           continue
         if args.skip_lackof_messageid and message['Message-ID'] is None:
           logging.error("Processing message %d does not have 'Message-ID' header", index)
+          save_message_to_file(message, full_filename + '.skip')
           continue
         if message['Date'] is None:
           logging.error("Processing message %d does not have 'Date' header", index)
+          save_message_to_file(message, full_filename + '.skip')
           continue
         if message['From'] is None:
           logging.error("Processing message %d does not have 'From' header", index)
+          save_message_to_file(message, full_filename + '.skip')
           continue
         logging.info("Processing message %d '%s' '%s' in label '%s'", index, message['Message-ID'], message['Date'], labelname)
         try:
@@ -253,6 +265,7 @@ def process_mbox_files(username, service, labels):
           logging.exception(
               'Failed to replace text/quoted-printable with text/plain '
               'in Content-Type header')
+          save_message_to_file(message, full_filename + '.err')
         try:
           if args.fix_msgid and 'Message-ID' in message:
             msgid = message['Message-ID']
@@ -265,6 +278,7 @@ def process_mbox_files(username, service, labels):
             message.replace_header('Message-ID', msgid)
         except Exception:
           logging.exception('Failed to fix brackets in Message-ID header')
+          save_message_to_file(message, full_filename + '.err')
         metadata_object = {'labelIds': [label_id]}
         try:
           # Use media upload to allow messages more than 5mb.
@@ -290,6 +304,7 @@ def process_mbox_files(username, service, labels):
         except Exception:
           number_of_failures_in_label += 1
           logging.exception('Failed to import mbox message')
+          save_message_to_file(message, full_filename + '.err')
       logging.info("Finished processing '%s'. %d messages imported "
                    "successfully, %d messages failed.",
                    full_filename,
@@ -309,6 +324,17 @@ def process_mbox_files(username, service, labels):
           number_of_messages_imported_without_error,   # 3
           number_of_messages_failed)                   # 4
 
+def save_message_to_file(message, filename):
+  if args.save_abnormal_messages is False:
+    return None
+  logging.info("Saving a message to '%s'", filename)
+  mbox = mailbox.mbox(filename, create=True)
+  mbox.lock()
+  try:
+    mbox.add(message)
+    mbox.flush()
+  finally:
+    mbox.unlock()
 
 def main():
   """Import multiple users' mbox files to Gmail.
