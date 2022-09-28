@@ -188,13 +188,15 @@ def process_mbox_files(username, service, labels):
                 Number of labels imported with some errors,
                 Number of labels that failed completely,
                 Number of messages imported without error,
-                Number of messages that failed.
+                Number of messages that failed,
+                Number of messages that skipped.
   """
   number_of_labels_imported_without_error = 0
   number_of_labels_imported_with_some_errors = 0
   number_of_labels_failed = 0
   number_of_messages_imported_without_error = 0
   number_of_messages_failed = 0
+  number_of_messages_skipped = 0
   base_path = os.path.join(args.dir, username)
   for root, dirs, files in os.walk(base_path):
     for dir in dirs:
@@ -230,6 +232,7 @@ def process_mbox_files(username, service, labels):
       logging.info("Starting processing of '%s'", full_filename)
       number_of_successes_in_label = 0
       number_of_failures_in_label = 0
+      number_of_skipped_in_label = 0
       mbox = mailbox.mbox(full_filename)
       try:
         label_id = get_label_id_from_name(service, username, labels, labelname)
@@ -241,15 +244,18 @@ def process_mbox_files(username, service, labels):
         if index < args.from_message:
           continue
         if args.skip_lackof_messageid and message['Message-ID'] is None:
-          logging.error("Processing message %d does not have 'Message-ID' header", index)
+          number_of_skipped_in_label += 1
+          logging.error("Skipping message %d does not have 'Message-ID' header", index)
           save_message_to_file(message, full_filename + '.skip')
           continue
         if message['Date'] is None:
-          logging.error("Processing message %d does not have 'Date' header", index)
+          number_of_skipped_in_label += 1
+          logging.error("Skipping message %d does not have 'Date' header", index)
           save_message_to_file(message, full_filename + '.skip')
           continue
         if message['From'] is None:
-          logging.error("Processing message %d does not have 'From' header", index)
+          number_of_skipped_in_label += 1
+          logging.error("Skipping message %d does not have 'From' header", index)
           save_message_to_file(message, full_filename + '.skip')
           continue
         logging.info("Processing message %d '%s' '%s' in label '%s'", index, message['Message-ID'], message['Date'], labelname)
@@ -304,10 +310,12 @@ def process_mbox_files(username, service, labels):
           logging.exception('Failed to import mbox message')
           save_message_to_file(message, full_filename + '.err')
       logging.info("Finished processing '%s'. %d messages imported "
-                   "successfully, %d messages failed.",
+                   "successfully, %d messages failed, "
+                   "%d messages skipped",
                    full_filename,
                    number_of_successes_in_label,
-                   number_of_failures_in_label)
+                   number_of_failures_in_label,
+                   number_of_skipped_in_label)
       if number_of_failures_in_label == 0:
         number_of_labels_imported_without_error += 1
       elif number_of_successes_in_label > 0:
@@ -316,11 +324,13 @@ def process_mbox_files(username, service, labels):
         number_of_labels_failed += 1
       number_of_messages_imported_without_error += number_of_successes_in_label
       number_of_messages_failed += number_of_failures_in_label
+      number_of_messages_skipped += number_of_skipped_in_label
   return (number_of_labels_imported_without_error,     # 0
           number_of_labels_imported_with_some_errors,  # 1
           number_of_labels_failed,                     # 2
           number_of_messages_imported_without_error,   # 3
-          number_of_messages_failed)                   # 4
+          number_of_messages_failed,                   # 4
+          number_of_messages_skipped)                  # 5
 
 def save_message_to_file(message, filename):
   if args.save_abnormal_messages is False:
@@ -375,6 +385,7 @@ def main():
   number_of_labels_failed = 0
   number_of_messages_imported_without_error = 0
   number_of_messages_failed = 0
+  number_of_messages_skipped = 0
   number_of_users_imported_without_error = 0
   number_of_users_imported_with_some_errors = 0
   number_of_users_failed = 0
@@ -417,14 +428,17 @@ def main():
       number_of_labels_failed += result[2]
       number_of_messages_imported_without_error += result[3]
       number_of_messages_failed += result[4]
+      number_of_messages_skipped += result[5]
       logging.info('Done importing user %s. Labels: %d succeeded, %d with some '
-                   'errors, %d failed. Messages: %d succeeded, %d failed.',
+                   'errors, %d failed. Messages: %d succeeded, %d failed, '
+                   '%d skipped',
                    username,
                    result[0],
                    result[1],
                    result[2],
                    result[3],
-                   result[4])
+                   result[4],
+                   result[5])
     except Exception:
       number_of_users_failed += 1
       logging.exception("Can't process user %s", username)
@@ -444,6 +458,8 @@ def main():
                number_of_labels_failed)
   logging.info('    %d messages imported successfully',
                number_of_messages_imported_without_error)
+  logging.info('    %d messages skipped',
+               number_of_messages_skipped)
   logging.info('    %d messages failed\n',
                number_of_messages_failed)
   if (number_of_messages_failed + number_of_labels_failed +
