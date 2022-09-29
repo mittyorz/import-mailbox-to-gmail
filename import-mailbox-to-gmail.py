@@ -245,18 +245,18 @@ def process_mbox_files(username, service, labels):
           continue
         if args.skip_lack_of_messageid and message['Message-ID'] is None:
           number_of_skipped_in_label += 1
-          logging.error("Skipping message %d does not have 'Message-ID' header", index)
-          save_message_to_file(message, full_filename + '.skip')
+          logging.info("Skipping message %d does not have 'Message-ID' header", index)
+          save_message_to_file(message, full_filename + '.msgid')
           continue
         if message['Date'] is None:
           number_of_skipped_in_label += 1
-          logging.error("Skipping message %d does not have 'Date' header", index)
-          save_message_to_file(message, full_filename + '.skip')
+          logging.info("Skipping message %d does not have 'Date' header", index)
+          save_message_to_file(message, full_filename + '.date')
           continue
         if message['From'] is None or len(message['From']) == 0:
           number_of_skipped_in_label += 1
-          logging.error("Skipping message %d does not have 'From' header", index)
-          save_message_to_file(message, full_filename + '.skip')
+          logging.info("Skipping message %d does not have 'From' header", index)
+          save_message_to_file(message, full_filename + '.from')
           continue
         logging.info("Processing message %d '%s' '%s' in label '%s'", index, message['Message-ID'], message['Date'], labelname)
         try:
