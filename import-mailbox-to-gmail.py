@@ -253,7 +253,7 @@ def process_mbox_files(username, service, labels):
           logging.error("Skipping message %d does not have 'Date' header", index)
           save_message_to_file(message, full_filename + '.skip')
           continue
-        if message['From'] is None:
+        if message['From'] is None or len(message['From']) == 0:
           number_of_skipped_in_label += 1
           logging.error("Skipping message %d does not have 'From' header", index)
           save_message_to_file(message, full_filename + '.skip')
